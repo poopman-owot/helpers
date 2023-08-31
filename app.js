@@ -625,7 +625,9 @@ const help = {
     }
     return info
   },
-async username(e) {
+    username : w.clientId,
+    
+async updateUserName(e) {
   let n = await async function(e) {
     return new Promise(async (n, t) => {
       let a = null;
@@ -639,7 +641,7 @@ async username(e) {
 },
   //----------------------------------------------------Info
   build() {
-      help.username()
+      help.updateUserName()
     help.getCharInfo.info = function() {
       console.warn(`help.getCharInfo:
 This function is used to get infomation about a cell's: char, colors, decorations, protection, and if it appears empty.
