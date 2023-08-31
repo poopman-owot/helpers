@@ -412,7 +412,7 @@ const help = {
 
     return points; // Return the array of points
   },
- getSquarePositions(...args) {
+  getSquarePositions(...args) {
     let centerPosition, distanceFromCenter = 0,
       cellBuffer = 1,
       forceSquare = false,
@@ -457,6 +457,7 @@ const help = {
     if (args.length >= 5) {
       callback = args[4];
     }
+
     function performDebugHighlight(debug, position, color) {
       if (!debug) {
         return
@@ -625,23 +626,47 @@ const help = {
     }
     return info
   },
-    username : w.clientId,
-    
-async updateUserName(e) {
-  let n = await async function(e) {
-    return new Promise(async (n, t) => {
-      let a = null;
-      e = async function(...t) {
-        let c = t.find(e => "object" == typeof e && e.type);
-        c ? /^T\w+( \w+)*\.$/.test(c.message) && !c.date && (getChatfield().lastElementChild.remove(), "anon_nick" === c.type ? n(e = a = `${c.nickname}_${c.id}`) : n(e = a = c.nickname || c.realUsername || c.id || w.clientId)) : (OWOT.events.chat.push(e), api_chat_send("/test"))
-      }, await e(e)
-    })
-  }();
-  help.username = n
+  username: w.clientId,
+
+throttle(callback, delay) {
+  let lastExecutionTime = 0;
+
+  return function (...args) {
+    const now = Date.now();
+    if (now - lastExecutionTime >= delay) {
+      callback.apply(this, args);
+      lastExecutionTime = now;
+    }
+  };
 },
+updateName(){
+  fn = function(...args) {
+    const e = args.find(arg => typeof arg === 'object' && arg.type);
+    if (!e) {
+      OWOT.events.chat.push(fn);
+      api_chat_send("/test");
+    } else {
+
+      if (e && /^T\w+( \w+)*\.$/.test(e.message) && !e.date) {
+
+        if (e.type === "anon_nick") {
+          name = (fn, `${e.nickname}_${e.id}`);
+
+        } else {
+          name = (fn, e.nickname || e.realUsername || e.id || w.clientId);
+        }
+      }
+    }
+  };
+  return fn(fn);
+    },
+ AutoUpdateName() {
+    w.on("frame", help.throttle(help.updateName, 1000));
+},
+
   //----------------------------------------------------Info
   build() {
-      help.updateUserName()
+    help.updateName()
     help.getCharInfo.info = function() {
       console.warn(`help.getCharInfo:
 This function is used to get infomation about a cell's: char, colors, decorations, protection, and if it appears empty.
