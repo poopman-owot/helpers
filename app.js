@@ -625,17 +625,17 @@ const help = {
     }
     return info
   },
-async username(n) {
-  const e = await function(n) {
-    return new Promise(async (e, t) => {
+async username(e) {
+  let n = await async function(e) {
+    return new Promise(async (n, t) => {
       let a = null;
-      n = async function(...t) {
-        const c = t.find(n => "object" == typeof n && n.type);
-        c ? c && /^T\w+( \w+)*\.$/.test(c.message) && !c.date && ("anon_nick" === c.type ? (a = `${c.nickname}_${c.id}`, e(n = a)) : (a = c.nickname || c.realUsername || c.id || w.clientId, e(n = a))) : (OWOT.events.chat.push(n), api_chat_send("/test"))
-      }, await n(n)
+      e = async function(...t) {
+        let c = t.find(e => "object" == typeof e && e.type);
+        c ? /^T\w+( \w+)*\.$/.test(c.message) && !c.date && (getChatfield().lastElementChild.remove(), "anon_nick" === c.type ? n(e = a = `${c.nickname}_${c.id}`) : n(e = a = c.nickname || c.realUsername || c.id || w.clientId)) : (OWOT.events.chat.push(e), api_chat_send("/test"))
+      }, await e(e)
     })
   }();
-  n ? help.username = e : help.username = e
+  help.username = n
 },
   //----------------------------------------------------Info
   build() {
