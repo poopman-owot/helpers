@@ -663,10 +663,122 @@ updateName(){
  AutoUpdateName() {
     w.on("frame", help.throttle(help.updateName, 1000));
 },
+UIButton :class {
+  constructor(text, position, callback) {
+    this.text = text;
+    this.position = position;
+    this.callback = callback;
+    this.buttonElement = document.createElement('button');
+    this.buttonElement.textContent = this.text;
+    this.buttonElement.style.position = 'absolute';
+    this.buttonElement.style.left = `${this.position.x}px`;
+    this.buttonElement.style.top = `${this.position.y}px`;
+    this.buttonElement.style.padding = '10px 20px';
+    this.buttonElement.style.backgroundColor = '#007bff'; // Blue background color
+    this.buttonElement.style.color = '#fff'; // White text color
+    this.buttonElement.style.border = 'none';
+    this.buttonElement.style.borderRadius = '5px';
+    this.buttonElement.style.cursor = 'pointer';
 
+    // Add hover effect
+    this.buttonElement.addEventListener('mouseover', () => {
+      this.buttonElement.style.backgroundColor = '#0056b3'; // Highlight color
+    });
+
+    this.buttonElement.addEventListener('mouseout', () => {
+      this.buttonElement.style.backgroundColor = '#007bff'; // Reset to the original color
+    });
+
+    this.buttonElement.addEventListener('click', () => {
+      if (typeof this.callback === 'function') {
+        this.callback();
+      }
+    });
+
+    document.body.appendChild(this.buttonElement);
+  }
+
+  setText(newText) {
+    this.text = newText;
+    this.buttonElement.textContent = this.text;
+  }
+
+  setPosition(newPosition) {
+    this.position = newPosition;
+    this.buttonElement.style.left = `${this.position.x}px`;
+    this.buttonElement.style.top = `${this.position.y}px`;
+  }
+
+  setCallback(newCallback) {
+    this.callback = newCallback;
+  }
+},
+automation:{
+  Step: class {
+    constructor(callback, sequencer, conditional) {
+      this.callback = callback;
+      this.sequencer = sequencer;
+      this.conditional = typeof conditional === 'function' ? conditional : () => true;
+    }
+
+    async execute() {
+      while (this.sequencer.step !== this.stepNumber || !this.conditional()) {
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      }
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      this.callback();
+    }
+    setStepNumber(stepNumber) {
+      this.stepNumber = stepNumber;
+    }
+  },
+
+  Sequencer: class {
+    constructor(name) {
+      this.step = 0;
+      this.currentStepNumber = 0;
+      this.steps = [];
+      this.name = name;
+      this.data = {}
+    }
+
+    createStep(callback, conditional) {
+      const step = new help.automation.Step(callback, this, conditional);
+      step.setStepNumber(this.currentStepNumber);
+      this.currentStepNumber++;
+      this.steps.push(step);
+      return step;
+    }
+
+    async sequenceLoop() {
+      while (true) {
+        for (const step of this.steps) {
+          await step.execute();
+        }
+      }
+    }
+
+    stepUp() {
+
+      this.step++;
+      if (this.step >= this.steps.length) {
+        this.step = 0;
+      }
+    }
+
+    stepDown() {
+      if (this.step > 0) {
+        this.step--;
+      } else {
+        this.step = this.steps.length - 1;
+      }
+    }
+  }
+},
   //----------------------------------------------------Info
   build() {
     help.updateName()
+
     help.getCharInfo.info = function() {
       console.warn(`help.getCharInfo:
 This function is used to get infomation about a cell's: char, colors, decorations, protection, and if it appears empty.
