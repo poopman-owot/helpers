@@ -1,6 +1,16 @@
 const help = {
   //Modified to allow for flexible inputs and a new "empty" return key
-
+  JsonFromLink(linkObj) {
+    if (linkObj && linkObj.url) {
+      try {
+        return JSON.parse(`{${linkObj.url}}`);
+      } catch (error) {
+        // JSON parsing error
+        return false;
+      }
+    }
+    return false;
+  },
   getCharInfo(...args) {
     let tileX, tileY, charX, charY;
 
@@ -39,7 +49,8 @@ const help = {
     const color = getCharColor(tileX, tileY, charX, charY);
     const protection = getCharProtection(tileX, tileY, charX, charY);
     const protectionTypes = ["public", "member", "owner"];
-
+    const link = getLink(tileX, tileY, charX, charY);
+    const json = help.JsonFromLink(link);
     return {
       loaded: isTileLoaded(tileX, tileY),
       char: char,
@@ -47,7 +58,9 @@ const help = {
       bgColor: getCharBgColor(tileX, tileY, charX, charY),
       protection: protection,
       decoration: getCharDecoration(tileX, tileY, charX, charY),
-      empty: (char === " " || color === resolveColorValue(styles[protectionTypes[protection]]))
+      link: link,
+      json: json,
+      empty: ((char === " " || color === resolveColorValue(styles[protectionTypes[protection]])) && !link)
     };
   },
   // modified to allow for flexible inputs. (a,b,c,d,e,f,g,h) || (array[4], e,f,g h) || (a,b,c,d,array[4]) || (array[4], array[4]) || (array[8])
@@ -628,153 +641,153 @@ const help = {
   },
   username: w.clientId,
 
-throttle(callback, delay) {
-  let lastExecutionTime = 0;
+  throttle(callback, delay) {
+    let lastExecutionTime = 0;
 
-  return function (...args) {
-    const now = Date.now();
-    if (now - lastExecutionTime >= delay) {
-      callback.apply(this, args);
-      lastExecutionTime = now;
-    }
-  };
-},
-updateName(){
-  fn = function(...args) {
-    const e = args.find(arg => typeof arg === 'object' && arg.type);
-    if (!e) {
-      OWOT.events.chat.push(fn);
-      api_chat_send("/test");
-    } else {
+    return function(...args) {
+      const now = Date.now();
+      if (now - lastExecutionTime >= delay) {
+        callback.apply(this, args);
+        lastExecutionTime = now;
+      }
+    };
+  },
+  updateName() {
+    fn = function(...args) {
+      const e = args.find(arg => typeof arg === 'object' && arg.type);
+      if (!e) {
+        OWOT.events.chat.push(fn);
+        api_chat_send("/test");
+      } else {
 
-      if (e && /^T\w+( \w+)*\.$/.test(e.message) && !e.date) {
+        if (e && /^T\w+( \w+)*\.$/.test(e.message) && !e.date) {
 
-        if (e.type === "anon_nick") {
-          name = (fn, `${e.nickname}_${e.id}`);
+          if (e.type === "anon_nick") {
+            name = (fn, `${e.nickname}_${e.id}`);
 
-        } else {
-          name = (fn, e.nickname || e.realUsername || e.id || w.clientId);
+          } else {
+            name = (fn, e.nickname || e.realUsername || e.id || w.clientId);
+          }
         }
       }
-    }
-  };
-  return fn(fn);
-    },
- AutoUpdateName() {
+    };
+    return fn(fn);
+  },
+  AutoUpdateName() {
     w.on("frame", help.throttle(help.updateName, 1000));
-},
-UIButton :class {
-  constructor(text, position, callback) {
-    this.text = text;
-    this.position = position;
-    this.callback = callback;
-    this.buttonElement = document.createElement('button');
-    this.buttonElement.textContent = this.text;
-    this.buttonElement.style.position = 'absolute';
-    this.buttonElement.style.left = `${this.position.x}px`;
-    this.buttonElement.style.top = `${this.position.y}px`;
-    this.buttonElement.style.padding = '10px 20px';
-    this.buttonElement.style.backgroundColor = '#007bff'; // Blue background color
-    this.buttonElement.style.color = '#fff'; // White text color
-    this.buttonElement.style.border = 'none';
-    this.buttonElement.style.borderRadius = '5px';
-    this.buttonElement.style.cursor = 'pointer';
-
-    // Add hover effect
-    this.buttonElement.addEventListener('mouseover', () => {
-      this.buttonElement.style.backgroundColor = '#0056b3'; // Highlight color
-    });
-
-    this.buttonElement.addEventListener('mouseout', () => {
-      this.buttonElement.style.backgroundColor = '#007bff'; // Reset to the original color
-    });
-
-    this.buttonElement.addEventListener('click', () => {
-      if (typeof this.callback === 'function') {
-        this.callback();
-      }
-    });
-
-    document.body.appendChild(this.buttonElement);
-  }
-
-  setText(newText) {
-    this.text = newText;
-    this.buttonElement.textContent = this.text;
-  }
-
-  setPosition(newPosition) {
-    this.position = newPosition;
-    this.buttonElement.style.left = `${this.position.x}px`;
-    this.buttonElement.style.top = `${this.position.y}px`;
-  }
-
-  setCallback(newCallback) {
-    this.callback = newCallback;
-  }
-},
-automation:{
-  Step: class {
-    constructor(callback, sequencer, conditional) {
+  },
+  UIButton: class {
+    constructor(text, position, callback) {
+      this.text = text;
+      this.position = position;
       this.callback = callback;
-      this.sequencer = sequencer;
-      this.conditional = typeof conditional === 'function' ? conditional : () => true;
+      this.buttonElement = document.createElement('button');
+      this.buttonElement.textContent = this.text;
+      this.buttonElement.style.position = 'absolute';
+      this.buttonElement.style.left = `${this.position.x}px`;
+      this.buttonElement.style.top = `${this.position.y}px`;
+      this.buttonElement.style.padding = '10px 20px';
+      this.buttonElement.style.backgroundColor = '#007bff'; // Blue background color
+      this.buttonElement.style.color = '#fff'; // White text color
+      this.buttonElement.style.border = 'none';
+      this.buttonElement.style.borderRadius = '5px';
+      this.buttonElement.style.cursor = 'pointer';
+
+      // Add hover effect
+      this.buttonElement.addEventListener('mouseover', () => {
+        this.buttonElement.style.backgroundColor = '#0056b3'; // Highlight color
+      });
+
+      this.buttonElement.addEventListener('mouseout', () => {
+        this.buttonElement.style.backgroundColor = '#007bff'; // Reset to the original color
+      });
+
+      this.buttonElement.addEventListener('click', () => {
+        if (typeof this.callback === 'function') {
+          this.callback();
+        }
+      });
+
+      document.body.appendChild(this.buttonElement);
     }
 
-    async execute() {
-      while (this.sequencer.step !== this.stepNumber || !this.conditional()) {
-        await new Promise((resolve) => setTimeout(resolve, 0));
-      }
-      await new Promise((resolve) => setTimeout(resolve, 0));
-      this.callback();
+    setText(newText) {
+      this.text = newText;
+      this.buttonElement.textContent = this.text;
     }
-    setStepNumber(stepNumber) {
-      this.stepNumber = stepNumber;
+
+    setPosition(newPosition) {
+      this.position = newPosition;
+      this.buttonElement.style.left = `${this.position.x}px`;
+      this.buttonElement.style.top = `${this.position.y}px`;
+    }
+
+    setCallback(newCallback) {
+      this.callback = newCallback;
     }
   },
+  automation: {
+    Step: class {
+      constructor(callback, sequencer, conditional) {
+        this.callback = callback;
+        this.sequencer = sequencer;
+        this.conditional = typeof conditional === 'function' ? conditional : () => true;
+      }
 
-  Sequencer: class {
-    constructor(name) {
-      this.step = 0;
-      this.currentStepNumber = 0;
-      this.steps = [];
-      this.name = name;
-      this.data = {}
-    }
+      async execute() {
+        while (this.sequencer.step !== this.stepNumber || !this.conditional()) {
+          await new Promise((resolve) => setTimeout(resolve, 0));
+        }
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        this.callback();
+      }
+      setStepNumber(stepNumber) {
+        this.stepNumber = stepNumber;
+      }
+    },
 
-    createStep(callback, conditional) {
-      const step = new help.automation.Step(callback, this, conditional);
-      step.setStepNumber(this.currentStepNumber);
-      this.currentStepNumber++;
-      this.steps.push(step);
-      return step;
-    }
+    Sequencer: class {
+      constructor(name) {
+        this.step = 0;
+        this.currentStepNumber = 0;
+        this.steps = [];
+        this.name = name;
+        this.data = {}
+      }
 
-    async sequenceLoop() {
-      while (true) {
-        for (const step of this.steps) {
-          await step.execute();
+      createStep(callback, conditional) {
+        const step = new help.automation.Step(callback, this, conditional);
+        step.setStepNumber(this.currentStepNumber);
+        this.currentStepNumber++;
+        this.steps.push(step);
+        return step;
+      }
+
+      async sequenceLoop() {
+        while (true) {
+          for (const step of this.steps) {
+            await step.execute();
+          }
+        }
+      }
+
+      stepUp() {
+
+        this.step++;
+        if (this.step >= this.steps.length) {
+          this.step = 0;
+        }
+      }
+
+      stepDown() {
+        if (this.step > 0) {
+          this.step--;
+        } else {
+          this.step = this.steps.length - 1;
         }
       }
     }
-
-    stepUp() {
-
-      this.step++;
-      if (this.step >= this.steps.length) {
-        this.step = 0;
-      }
-    }
-
-    stepDown() {
-      if (this.step > 0) {
-        this.step--;
-      } else {
-        this.step = this.steps.length - 1;
-      }
-    }
-  }
-},
+  },
   //----------------------------------------------------Info
   build() {
     help.updateName()
@@ -938,7 +951,13 @@ This will be usefull for drawing squares, or using this with a character for col
 This  function returns the mouse location in pixel-space and cell-space. It also gets the character data under the mouse position.
 `);
     }
+    help.throttle.info = function() {
+      console.warn(`help.throttle:
+This  function is used to rate-limit a function. 
+Example usage: help.throttle(myFunction,1000); myFunction(){console.log(hello);}
 
+`);
+    }
     help.build = null;
   }
 
