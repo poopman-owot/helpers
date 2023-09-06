@@ -74,7 +74,8 @@ getCharInfo(...args) {
     decoration: getCharDecoration(tileX, tileY, charX, charY),
     link: link,
     json: json,
-    empty: ((char === " " || color === resolveColorValue(styles[protectionTypes[protection]])) && !link),
+    empty: ((char.trim().length == 0 || [6158,8192,8193,8194,8195,8196,8197,8198,8199,8200,8201,8202,8203,8204,8205,8239,8287,8288,12288,10240,12644,65279,,32].includes(char.charCodeAt())
+ || color === resolveColorValue(styles[protectionTypes[protection]])) && !link),
     custom: custom
   };
 },
