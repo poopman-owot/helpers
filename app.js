@@ -11,58 +11,74 @@ const help = {
     }
     return false;
   },
-  getCharInfo(...args) {
-    let tileX, tileY, charX, charY;
 
-    if (args.length === 1 && Array.isArray(args[0]) && args[0].length === 2) {
-      const [x, y] = args[0];
-      const cellArray = help.pixelToCell([x, y]);
-      [tileX, tileY, charX, charY] = cellArray;
-    } else if (args.length === 1 && Array.isArray(args[0]) && args[0].length === 4) {
-      [tileX, tileY, charX, charY] = args[0];
-    } else if (args.length === 1 && typeof args[0] === 'object') {
-      const objArgs = args[0];
-      if ('tileX' in objArgs) {
-        tileX = objArgs.tileX;
-      }
-      if ('tileY' in objArgs) {
-        tileY = objArgs.tileY;
-      }
-      if ('charX' in objArgs) {
-        charX = objArgs.charX;
-      }
-      if ('charY' in objArgs) {
-        charY = objArgs.charY;
-      }
-      if ('x' in objArgs && 'y' in objArgs) {
-        const cellArray = help.pixelToCell([objArgs.x, objArgs.y]);
-        [tileX, tileY, charX, charY] = cellArray;
-      }
-    } else {
-      if (!cursorCoords) {
-        return null;
-      }
-      [tileX, tileY, charX, charY] = cursorCoords;
+getCharInfo(...args) {
+  let tileX, tileY, charX, charY;
+  let optionFunction = null; // Initialize the optionFunction
+
+  // Check if the last argument is a function and assign it to optionFunction
+  if (typeof args[args.length - 1] === 'function') {
+    optionFunction = args.pop();
+  }
+
+  if (args.length === 1 && Array.isArray(args[0]) && args[0].length === 2) {
+    const [x, y] = args[0];
+    const cellArray = help.pixelToCell([x, y]);
+    [tileX, tileY, charX, charY] = cellArray;
+  } else if (args.length === 1 && Array.isArray(args[0]) && args[0].length === 4) {
+    [tileX, tileY, charX, charY] = args[0];
+  } else if (args.length === 1 && typeof args[0] === 'object') {
+    const objArgs = args[0];
+    if ('tileX' in objArgs) {
+      tileX = objArgs.tileX;
     }
+    if ('tileY' in objArgs) {
+      tileY = objArgs.tileY;
+    }
+    if ('charX' in objArgs) {
+      charX = objArgs.charX;
+    }
+    if ('charY' in objArgs) {
+      charY = objArgs.charY;
+    }
+    if ('x' in objArgs && 'y' in objArgs) {
+      const cellArray = help.pixelToCell([objArgs.x, objArgs.y]);
+      [tileX, tileY, charX, charY] = cellArray;
+    }
+  } else {
+    if (!cursorCoords) {
+      return null;
+    }
+    [tileX, tileY, charX, charY] = cursorCoords;
+  }
 
-    const char = getChar(tileX, tileY, charX, charY);
-    const color = getCharColor(tileX, tileY, charX, charY);
-    const protection = getCharProtection(tileX, tileY, charX, charY);
-    const protectionTypes = ["public", "member", "owner"];
-    const link = getLink(tileX, tileY, charX, charY);
-    const json = help.JsonFromLink(link);
-    return {
-      loaded: isTileLoaded(tileX, tileY),
-      char: char,
-      color: color,
-      bgColor: getCharBgColor(tileX, tileY, charX, charY),
-      protection: protection,
-      decoration: getCharDecoration(tileX, tileY, charX, charY),
-      link: link,
-      json: json,
-      empty: ((char === " " || color === resolveColorValue(styles[protectionTypes[protection]])) && !link)
-    };
-  },
+  const char = getChar(tileX, tileY, charX, charY);
+  const color = getCharColor(tileX, tileY, charX, charY);
+  const protection = getCharProtection(tileX, tileY, charX, charY);
+  const protectionTypes = ["public", "member", "owner"];
+  const link = getLink(tileX, tileY, charX, charY);
+  const json = help.JsonFromLink(link);
+  let custom = null;
+
+  // Call the provided optionFunction (callback) if it's a function
+  if (optionFunction) {
+    custom = optionFunction(char);
+  }
+
+  return {
+    loaded: isTileLoaded(tileX, tileY),
+    char: char,
+    color: color,
+    bgColor: getCharBgColor(tileX, tileY, charX, charY),
+    protection: protection,
+    decoration: getCharDecoration(tileX, tileY, charX, charY),
+    link: link,
+    json: json,
+    empty: ((char === " " || color === resolveColorValue(styles[protectionTypes[protection]])) && !link),
+    custom: custom
+  };
+},
+
   // modified to allow for flexible inputs. (a,b,c,d,e,f,g,h) || (array[4], e,f,g h) || (a,b,c,d,array[4]) || (array[4], array[4]) || (array[8])
   coordinateAdd(...args) {
 
@@ -478,6 +494,9 @@ const help = {
       highlight([position], true, int_to_rgb(color))
 
     }
+if(centerPosition.length == 2){
+centerPosition = help.pixelToCell(centerPosition);
+}
     // Calculate the starting position of the square
     function calculateStartPosition(centerPosition, distanceFromCenter, cellBuffer) {
       return help.coordinateAdd(centerPosition, [0, 0, -1 * (distanceFromCenter + cellBuffer), -1 * (distanceFromCenter + cellBuffer)]);
@@ -563,6 +582,7 @@ const help = {
 
       position = help.coordinateAdd(start, [0, 0, d1, d2]);
       const [x, y, z, w] = position;
+
       return {
         color,
         position,
@@ -788,6 +808,52 @@ const help = {
       }
     }
   },
+KeybindingManager: class{
+  constructor() {
+    this.eventKeybindings = new Map();
+    this.handleKeyPress = this.handleKeyPress.bind(this);
+    window.addEventListener('keydown', this.handleKeyPress);
+  }
+
+  addKeybinding(event, key, callback) {
+    if (!this.eventKeybindings.has(event)) {
+      this.eventKeybindings.set(event, []);
+    }
+
+    this.eventKeybindings.get(event).push({ key, callback });
+  }
+
+  removeKeybinding(event, key) {
+    const keybindings = this.eventKeybindings.get(event);
+    if (keybindings) {
+      const index = keybindings.findIndex(kb => kb.key === key);
+      if (index !== -1) {
+        keybindings.splice(index, 1);
+        if (keybindings.length === 0) {
+          this.eventKeybindings.delete(event);
+        }
+      }
+    }
+  }
+
+  handleKeyPress(event) {
+    const key = event.key;
+    for (const [eventName, keybindings] of this.eventKeybindings) {
+      const matchingKeybinding = keybindings.find(kb => kb.key === key);
+      if (matchingKeybinding) {
+        matchingKeybinding.callback();
+        event.preventDefault();
+      }
+    }
+  }
+
+  listKeybindings() {
+    return Array.from(this.eventKeybindings.entries()).map(([event, keybindings]) => ({
+      event,
+      key: keybindings.map(kb => kb.key),
+    }));
+  }
+},
   //----------------------------------------------------Info
   build() {
     help.updateName()
